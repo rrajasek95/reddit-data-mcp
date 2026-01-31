@@ -1,0 +1,16 @@
+{
+  "name": "reddit-data-mcp",
+  "description": "Reddit data plugin for Claude Code",
+  "owner": {
+    "name": "rrajasek95"
+  },
+  "plugins": [
+    {
+      "name": "reddit-data-mcp",
+      "source": ".",
+      "description": "Search Reddit posts and comments across subreddits. No API keys required.",
+      "version": "0.2.0",
+      "strict": false
+    }
+  ]
+}
