@@ -25,7 +25,14 @@ def _time_filter_to_epoch(time_filter: str) -> int | None:
     return None
 
 
-def _fetch_posts(query: str, subreddit: Optional[str], sort: str, time_filter: str, limit: int) -> list[dict]:
+def _truncate(text: str, max_chars: int) -> str:
+    if max_chars <= 0 or len(text) <= max_chars:
+        return text
+    remaining = len(text) - max_chars
+    return text[:max_chars] + f"... ({remaining:,} more chars)"
+
+
+def _fetch_posts(query: str, subreddit: Optional[str], sort: str, time_filter: str, limit: int, max_text: int = 2000) -> list[dict]:
     params: dict = {"q": query, "size": min(limit, 100), "sort": "desc", "sort_type": sort}
     if subreddit:
         params["subreddit"] = subreddit
@@ -47,13 +54,13 @@ def _fetch_posts(query: str, subreddit: Optional[str], sort: str, time_filter: s
             "score": p.get("score", 0),
             "num_comments": p.get("num_comments", 0),
             "url": f"https://reddit.com{p['permalink']}" if p.get("permalink") else "",
-            "selftext": (selftext[:500] + "...") if len(selftext) > 500 else selftext,
+            "selftext": _truncate(selftext, max_text),
             "author": p.get("author", "[deleted]"),
         })
     return posts
 
 
-def _fetch_comments(post_id: str, limit: int) -> list[dict]:
+def _fetch_comments(post_id: str, limit: int, max_text: int = 2000) -> list[dict]:
     params: dict = {"link_id": post_id, "size": min(limit, 100), "sort": "desc", "sort_type": "score"}
 
     with httpx.Client(timeout=HTTP_TIMEOUT) as client:
@@ -68,7 +75,7 @@ def _fetch_comments(post_id: str, limit: int) -> list[dict]:
         comments.append({
             "author": c.get("author", "[deleted]"),
             "score": c.get("score", 0),
-            "body": (body[:500] + "...") if len(body) > 500 else body,
+            "body": _truncate(body, max_text),
         })
     return comments
 
@@ -82,12 +89,14 @@ def search(
     limit: int = 10,
     include_comments: bool = False,
     comments_per_post: int = 5,
+    max_text: int = 2000,
 ) -> str:
     """
     Search Reddit posts and optionally fetch top comments.
 
     Returns structured post data (title, score, subreddit, URL, text snippet).
     When include_comments is True, also fetches top comments for each post.
+    Truncated text shows how many chars remain — increase max_text to fetch more.
 
     Common patterns:
     - Broad search: search("topic")
@@ -96,6 +105,7 @@ def search(
     - Recent activity in a community: search("", subreddit="options", time_filter="week", sort="created_utc")
     - More data: increase limit (max 100)
     - Deep dive with comments: search("topic", limit=25, include_comments=True, comments_per_post=10)
+    - Full text: search("topic", max_text=0) for no truncation
 
     Args:
         query: Search query string
@@ -105,12 +115,13 @@ def search(
         limit: Number of posts to return (1-100, default 10)
         include_comments: Fetch top comments for each post (default False)
         comments_per_post: Number of comments per post when include_comments is True (default 5)
+        max_text: Max characters for post text and comment bodies (default 2000, 0 for no limit)
 
     Returns:
         Formatted post data with optional comments
     """
     try:
-        posts = _fetch_posts(query, subreddit, sort, time_filter, limit)
+        posts = _fetch_posts(query, subreddit, sort, time_filter, limit, max_text)
     except Exception as e:
         return f"**Error:** {e}"
 
@@ -127,7 +138,7 @@ def search(
 
         if include_comments:
             try:
-                comments = _fetch_comments(post["id"], comments_per_post)
+                comments = _fetch_comments(post["id"], comments_per_post, max_text)
             except Exception:
                 comments = []
             if comments:

@@ -9,7 +9,7 @@ No API keys required — uses the public [PullPush.io](https://pullpush.io/) arc
 One tool: `search`
 
 ```
-search(query, subreddit?, sort="score", time_filter="all", limit=10, include_comments=False, comments_per_post=5)
+search(query, subreddit?, sort="score", time_filter="all", limit=10, include_comments=False, comments_per_post=5, max_text=2000)
 ```
 
 **Parameters:**
@@ -23,6 +23,7 @@ search(query, subreddit?, sort="score", time_filter="all", limit=10, include_com
 | `limit` | 10 | Number of posts (1-100) |
 | `include_comments` | False | Fetch top comments per post |
 | `comments_per_post` | 5 | Comments per post when enabled |
+| `max_text` | 2000 | Max chars for post/comment text (0 = no limit) |
 
 ## Quick Start
 
