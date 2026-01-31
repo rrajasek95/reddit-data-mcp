@@ -1,74 +1,55 @@
-# Reddit Sentiment Skill
+# Reddit Data Skill
 
-Use the Reddit Sentiment MCP to search Reddit and analyze community sentiment on any topic.
+Access Reddit posts and comments via MCP.
 
-## When to Use
+## Tool
 
-- **Market research**: What do people think about a product, broker, or service?
-- **Sentiment analysis**: Gauge community opinion on a topic
-- **Trend discovery**: Find what's being discussed in specific subreddits
-- **Community overview**: Understand a subreddit's focus and activity
-
-## Available Tools
-
-### search - Quick Reddit Search
+### search
 ```
-search(query, subreddit?, sort="score", time_filter="all", limit=10)
+search(query, subreddit?, sort="score", time_filter="all", limit=10, include_comments=False, comments_per_post=5)
 ```
-Returns structured results (title, subreddit, score, URL, text snippet).
 
-### ask - Sentiment Summary
-```
-ask(query, subreddit?, time_filter="week", limit=25, response_id?)
-```
-Fetches posts + top comments for sentiment synthesis. Pass `response_id` from a previous call to refine without re-fetching.
+## Common Patterns
 
-### think - Deep Analysis
-```
-think(query, subreddit?, time_filter="month", limit=50, response_id?)
-```
-Pulls more posts/comments across subreddits for detailed sentiment breakdown (themes, complaints, praise patterns).
-
-### subreddit_overview - Community Activity
-```
-subreddit_overview(subreddit)
-```
-Recent posts from a subreddit showing current discussion topics.
-
-## Examples
-
-### Search for discussions
+### Find posts on a topic
 ```
 search("best broker for options trading")
 ```
 
-### Get sentiment on a topic
+### Scope to a subreddit
 ```
-ask("what do people think about Robinhood?", subreddit="wallstreetbets")
-```
-
-### Deep analysis
-```
-think("Tesla stock sentiment", time_filter="week")
+search("DD", subreddit="wallstreetbets", time_filter="week")
 ```
 
-### Follow-up on previous results
+### Get posts with comments
 ```
-ask("drill into the negative comments", response_id="abc123def456")
-```
-
-### Explore a community
-```
-subreddit_overview("options")
+search("what do people think about Robinhood", include_comments=True)
 ```
 
-## Output Format
+### See what a community is discussing
+```
+search("", subreddit="options", time_filter="week", sort="created_utc")
+```
 
-Responses include:
-- Structured post data (title, score, subreddit, comments)
-- Comment text for sentiment analysis
-- response_id for follow-up queries (ask/think only)
+### Deep dive with more data
+```
+search("Tesla", limit=25, include_comments=True, comments_per_post=10)
+```
 
-## Environment
+## Parameters
 
-No API keys required. Uses the PullPush.io public API for Reddit data access.
+- **query**: Search terms (empty string for browsing a subreddit)
+- **subreddit**: Filter to one subreddit
+- **sort**: `score`, `num_comments`, or `created_utc`
+- **time_filter**: `all`, `day`, `week`, `month`, `year`
+- **limit**: Number of posts (1-100)
+- **include_comments**: Fetch top comments per post
+- **comments_per_post**: How many comments per post (default 5)
+
+## Notes
+
+- No API keys required
+- Data comes from PullPush.io (public Reddit archive)
+- Posts include: title, score, subreddit, author, URL, text snippet
+- Comments include: author, score, body text
+- Removed/deleted comments are filtered out
