@@ -1,15 +1,12 @@
 """Reddit Data MCP Server — hybrid Reddit .json + Arctic-Shift backend."""
 
-import logging
 import math
 import random
 import time
 from typing import Optional
 
 import httpx
-from fastmcp import FastMCP
-
-log = logging.getLogger("reddit-data-mcp")
+from fastmcp import Context, FastMCP
 
 mcp = FastMCP("Reddit Data")
 
@@ -265,30 +262,34 @@ def _fetch_comments_arctic(post_id: str, limit: int, max_text: int) -> list[dict
     return comments
 
 
-def _fetch_comments(post_id: str, limit: int, max_text: int) -> list[dict]:
+async def _fetch_comments(post_id: str, limit: int, max_text: int, ctx: Optional[Context] = None) -> list[dict]:
     """Fetch comments — prefer Reddit .json, fall back to Arctic-Shift."""
     if _reddit_limiter.acquire():
         try:
             return _fetch_comments_reddit(post_id, limit, max_text)
-        except Exception:
-            pass
+        except Exception as e:
+            if ctx:
+                await ctx.warning(f"Reddit .json comments failed for {post_id}: {e}")
     # Fallback
     try:
         return _fetch_comments_arctic(post_id, limit, max_text)
-    except Exception:
+    except Exception as e:
+        if ctx:
+            await ctx.warning(f"Arctic-Shift comments also failed for {post_id}: {e}")
         return []
 
 
 # ---------------------------------------------------------------------------
 # Hybrid search strategy
 # ---------------------------------------------------------------------------
-def _fetch_posts(
+async def _fetch_posts(
     query: str,
     subreddit: Optional[str],
     sort: str,
     time_filter: str,
     limit: int,
     max_text: int,
+    ctx: Optional[Context] = None,
 ) -> list[dict]:
     """
     Hybrid fetch:
@@ -301,22 +302,27 @@ def _fetch_posts(
             posts = _fetch_posts_arctic(query, subreddit, sort, time_filter, limit, max_text)
             if posts:
                 return posts
-            log.debug("Arctic-Shift returned 0 results for q=%r sub=%r", query, subreddit)
+            if ctx:
+                await ctx.info(f"Arctic-Shift returned 0 results for q={query!r} sub={subreddit!r}, falling back to Reddit .json")
         except Exception as e:
-            log.warning("Arctic-Shift failed for q=%r sub=%r: %s", query, subreddit, e)
+            if ctx:
+                await ctx.warning(f"Arctic-Shift failed for q={query!r} sub={subreddit!r}: {e}")
         # Fallback to Reddit .json
         if _reddit_limiter.acquire():
             try:
                 return _fetch_posts_reddit(query, subreddit, sort, time_filter, limit, max_text)
             except Exception as e:
-                log.warning("Reddit .json fallback failed for q=%r sub=%r: %s", query, subreddit, e)
+                if ctx:
+                    await ctx.warning(f"Reddit .json fallback also failed for q={query!r} sub={subreddit!r}: {e}")
         else:
-            log.debug("Rate limiter denied Reddit .json fallback for q=%r sub=%r", query, subreddit)
+            if ctx:
+                await ctx.warning(f"Rate limiter denied Reddit .json fallback for q={query!r} sub={subreddit!r}")
         return []
     else:
         # Global search — Reddit .json only
         if not _reddit_limiter.acquire(wait=True):
-            log.warning("Rate limiter denied global search for q=%r", query)
+            if ctx:
+                await ctx.warning(f"Rate limiter denied global search for q={query!r}")
             return []
         return _fetch_posts_reddit(query, None, sort, time_filter, limit, max_text)
 
@@ -325,8 +331,9 @@ def _fetch_posts(
 # MCP Tool
 # ---------------------------------------------------------------------------
 @mcp.tool
-def search(
+async def search(
     query: str,
+    ctx: Context,
     subreddit: Optional[str] = None,
     sort: str = "score",
     time_filter: str = "all",
@@ -377,8 +384,9 @@ def search(
         Formatted post data with optional comments
     """
     try:
-        posts = _fetch_posts(query, subreddit, sort, time_filter, limit, max_text)
+        posts = await _fetch_posts(query, subreddit, sort, time_filter, limit, max_text, ctx)
     except Exception as e:
+        await ctx.error(f"Search failed: {e}")
         return f"**Error:** {e}"
 
     if not posts:
@@ -398,7 +406,7 @@ def search(
 
         if include_comments:
             try:
-                comments = _fetch_comments(post["id"], comments_per_post, max_text)
+                comments = await _fetch_comments(post["id"], comments_per_post, max_text, ctx)
             except Exception:
                 comments = []
             if comments:
