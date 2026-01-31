@@ -68,6 +68,13 @@ search(query, subreddit?, sort="score", time_filter="all", limit=10, include_com
 
 Each result includes a `Source: reddit` or `Source: arctic-shift` indicator.
 
+## Acknowledgements
+
+- [Arctic-Shift](https://github.com/ArthurHeitmann/arctic_shift) — Reddit archival project providing the search API and data dumps
+- [FastMCP](https://github.com/jlowin/fastmcp) — Python framework for building MCP servers
+- [httpx](https://github.com/encode/httpx) — HTTP client library
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — Anthropic's CLI tool (plugin target)
+
 ## License
 
 MIT
