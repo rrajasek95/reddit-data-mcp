@@ -345,6 +345,10 @@ async def search(
     """
     Search Reddit posts and optionally fetch top comments.
 
+    Use this for community sentiment, public opinion, user experiences, product
+    reviews, troubleshooting discussions, and any topic where real user voices matter.
+    Reddit is the best source for unfiltered human perspectives on a topic.
+
     Returns structured post data (title, score, subreddit, URL, text snippet).
     When include_comments is True, also fetches top comments for each post.
     Truncated text shows how many chars remain — increase max_text to fetch more.
