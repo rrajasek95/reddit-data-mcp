@@ -1,5 +1,6 @@
 """Reddit Data MCP Server — hybrid Reddit .json + Arctic-Shift backend."""
 
+import logging
 import math
 import random
 import time
@@ -7,6 +8,8 @@ from typing import Optional
 
 import httpx
 from fastmcp import FastMCP
+
+log = logging.getLogger("reddit-data-mcp")
 
 mcp = FastMCP("Reddit Data")
 
@@ -298,18 +301,22 @@ def _fetch_posts(
             posts = _fetch_posts_arctic(query, subreddit, sort, time_filter, limit, max_text)
             if posts:
                 return posts
-        except Exception:
-            pass
+            log.debug("Arctic-Shift returned 0 results for q=%r sub=%r", query, subreddit)
+        except Exception as e:
+            log.warning("Arctic-Shift failed for q=%r sub=%r: %s", query, subreddit, e)
         # Fallback to Reddit .json
         if _reddit_limiter.acquire():
             try:
                 return _fetch_posts_reddit(query, subreddit, sort, time_filter, limit, max_text)
-            except Exception:
-                pass
+            except Exception as e:
+                log.warning("Reddit .json fallback failed for q=%r sub=%r: %s", query, subreddit, e)
+        else:
+            log.debug("Rate limiter denied Reddit .json fallback for q=%r sub=%r", query, subreddit)
         return []
     else:
         # Global search — Reddit .json only
         if not _reddit_limiter.acquire(wait=True):
+            log.warning("Rate limiter denied global search for q=%r", query)
             return []
         return _fetch_posts_reddit(query, None, sort, time_filter, limit, max_text)
 
