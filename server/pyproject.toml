@@ -1,7 +1,7 @@
 [project]
 name = "reddit-sentiment-mcp"
-version = "0.1.0"
-description = "Reddit sentiment analysis MCP server using PullPush API"
+version = "0.2.0"
+description = "Reddit data MCP server — hybrid Reddit .json + Arctic-Shift backend"
 readme = "../README.md"
 requires-python = ">=3.10"
 dependencies = [

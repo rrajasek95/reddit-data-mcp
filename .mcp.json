@@ -1,0 +1,6 @@
+{
+  "reddit": {
+    "command": "uvx",
+    "args": ["--from", "git+https://github.com/rrajasek95/reddit-data-mcp#subdirectory=server", "python", "-m", "server"]
+  }
+}

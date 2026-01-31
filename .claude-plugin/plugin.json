@@ -1,0 +1,9 @@
+{
+  "name": "reddit-data-mcp",
+  "description": "Search Reddit posts and comments across subreddits. Returns structured data with scores, comment threads, and text snippets. No API keys required.",
+  "version": "0.2.0",
+  "author": {
+    "name": "reddit-data-mcp"
+  },
+  "keywords": ["reddit", "search", "social-media", "comments", "sentiment"]
+}
