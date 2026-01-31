@@ -19,7 +19,8 @@ claude plugin install reddit-data-mcp@reddit-data-mcp
 ## Manual Setup
 
 ```bash
-cd server
+git clone https://github.com/rrajasek95/reddit-data-mcp.git
+cd reddit-data-mcp/server
 uv sync
 uv run python server.py
 ```
